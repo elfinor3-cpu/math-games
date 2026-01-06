@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Μαθηματικές Διαδρομές - Papanikolaou 2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        
+        .header-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; text-align: left; }
+        .box { padding: 15px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
+        .instructions { background: #e0f2fe; border-left: 5px solid #0284c7; }
+        .teacher { background: #fef3c7; border-left: 5px solid #d97706; }
+
+        .mission-box { background: #ffffff; border: 3px dashed #cbd5e1; padding: 30px; border-radius: 20px; margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 20px; }
+        .num-circle { width: 80px; height: 80px; background: #1e293b; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; }
+        .arrow { font-size: 40px; color: #64748b; font-weight: bold; }
+        .target-circle { width: 90px; height: 90px; background: #e11d48; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; box-shadow: 0 5px 15px rgba(225, 29, 72, 0.3); }
+
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; max-width: 600px; margin: 20px auto; }
+        .option-card { background: #f1f5f9; border: 2px solid #e2e8f0; padding: 20px; font-size: 24px; font-weight: bold; border-radius: 15px; cursor: pointer; transition: 0.2s; color: #334155; }
+        .option-card:hover { transform: scale(1.05); background: #3b82f6; color: white; border-color: #2563eb; }
+        
+        #stats { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #475569; }
+        .diff-select { margin-bottom: 20px; }
+        .diff-btn { padding: 8px 16px; margin: 0 5px; cursor: pointer; border-radius: 8px; border: 1px solid #cbd5e1; background: white; font-weight: bold; }
+        .diff-btn.active { background: #1e293b; color: white; }
+        
+        .footer { margin-top: 30px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Μαθηματικές Διαδρομές</h1>
+
+    <div class="header-info">
+        <div class="box instructions">
+            <h3>🎮 Πώς παίζεται</h3>
+            <p>Δες τον πρώτο αριθμό και τον στόχο. <br>
+            Ποια πράξη μας πάει από το ένα στο άλλο; <br>
+            <b>Βρες την κάρτα με το σωστό σύμβολο και αριθμό!</b></p>
+        </div>
+        <div class="box teacher">
+            <h3>👨‍🏫 Εκπαιδευτικός Στόχος</h3>
+            <p>Ανάπτυξη ευελιξίας στις 4 πράξεις και κατανόηση της σχέσης μεταξύ των αριθμών στην εκατοντάδα. Ενισχύει τη νοερή επίλυση εξισώσεων.</p>
+        </div>
+    </div>
+
+    <div class="diff-select">
+        <button class="diff-btn active" id="btn-easy" onclick="setLevel('easy')">Εύκολο (+/-)</button>
+        <button class="diff-btn" id="btn-medium" onclick="setLevel('medium')">Μέτριο (+/-/*)</button>
+        <button class="diff-btn" id="btn-hard" onclick="setLevel('hard')">Δύσκολο (Όλες οι πράξεις)</button>
+    </div>
+
+    <div id="stats">Σκορ: <span id="score">0</span> | Χρόνος: <span id="timer">60</span>s</div>
+
+    <div class="mission-box">
+        <div class="num-circle" id="start-val">?</div>
+        <div class="arrow">── <span id="hint">?</span> ──></div>
+        <div class="target-circle" id="target-val">?</div>
+    </div>
+
+    <div class="grid" id="options-grid"></div>
+
+    <div class="footer">
+        In-School Teacher Training in Mathematics | 4th Primary School of Nea Artaki<br>
+        <b>Papanikolaou Georgios 2026</b>
+    </div>
+</div>
+
+<script>
+    let score = 0;
+    let timeLeft = 60;
+    let timer;
+    let currentLevel = 'easy';
+    let correctOp = "";
+
+    function setLevel(lvl) {
+        currentLevel = lvl;
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + lvl).classList.add('active');
+        initGame();
+    }
+
+    function initGame() {
+        score = 0;
+        timeLeft = 60;
+        document.getElementById('score').innerText = score;
+        clearInterval(timer);
+        timer = setInterval(updateTimer, 1000);
+        newRound();
+    }
+
+    function newRound() {
+        let start = Math.floor(Math.random() * 50) + 1;
+        let target, opText, val;
+        
+        const mode = Math.random();
+        
+        // Επιλογή πράξης βάσει επιπέδου
+        let availableOps = ['add', 'sub'];
+        if (currentLevel === 'medium') availableOps.push('mul');
+        if (currentLevel === 'hard') availableOps.push('mul', 'div');
+        
+        const chosenOp = availableOps[Math.floor(Math.random() * availableOps.length)];
+
+        switch(chosenOp) {
+            case 'add':
+                val = Math.floor(Math.random() * 40) + 1;
+                target = start + val;
+                opText = "+" + val;
+                break;
+            case 'sub':
+                start = Math.floor(Math.random() * 50) + 50;
+                val = Math.floor(Math.random() * 40) + 1;
+                target = start - val;
+                opText = "-" + val;
+                break;
+            case 'mul':
+                start = Math.floor(Math.random() * 10) + 2;
+                val = Math.floor(Math.random() * 8) + 2;
+                target = start * val;
+                opText = "x" + val;
+                break;
+            case 'div':
+                val = Math.floor(Math.random() * 8) + 2;
+                target = Math.floor(Math.random() * 10) + 2;
+                start = target * val;
+                opText = ":" + val;
+                break;
+        }
+
+        document.getElementById('start-val').innerText = start;
+        document.getElementById('target-val').innerText = target;
+        correctOp = opText;
+
+        generateOptions(opText);
+    }
+
+    function generateOptions(correct) {
+        const grid = document.getElementById('options-grid');
+        grid.innerHTML = '';
+        let options = [correct];
+
+        while(options.length < 12) {
+            const symbols = ['+', '-', 'x', ':'];
+            const s = symbols[Math.floor(Math.random() * (currentLevel === 'hard' ? 4 : (currentLevel === 'medium' ? 3 : 2)))];
+            const v = Math.floor(Math.random() * 30) + 1;
+            const fake = s + v;
+            if(!options.includes(fake)) options.push(fake);
+        }
+
+        options.sort(() => Math.random() - 0.5);
+
+        options.forEach(opt => {
+            const div = document.createElement('div');
+            div.className = 'option-card';
+            div.innerText = opt;
+            div.onclick = () => {
+                if(opt === correct) {
+                    score++;
+                    document.getElementById('score').innerText = score;
+                    confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
+                    newRound();
+                } else {
+                    div.style.backgroundColor = "#fee2e2";
+                    setTimeout(() => div.style.backgroundColor = "#f1f5f9", 300);
+                }
+            };
+            grid.appendChild(div);
+        });
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+        if(timeLeft <= 0) {
+            clearInterval(timer);
+            alert("Τέλος παιχνιδιού! Το σκορ σου: " + score);
+            initGame();
+        }
+    }
+
+    window.onload = initGame;
+</script>
+</body>
+</html>

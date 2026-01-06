@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Το Παιχνίδι της Λογικής και των Σχημάτων - Papanikolaou 2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background-color: #fdf5e6; font-family: 'Segoe UI', Arial, sans-serif; text-align: center; margin: 0; overflow-x: hidden; }
+        #game-container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 15px; }
+        
+        h1 { color: #b22222; margin: 5px; font-size: 26px; }
+        
+        #difficulty-selector { margin: 10px; display: flex; gap: 10px; }
+        .diff-btn { padding: 8px 15px; cursor: pointer; border: 2px solid #b22222; border-radius: 5px; background: gold; font-weight: bold; }
+        .diff-btn.active { background: #b22222; color: white; }
+
+        #question-box { background: white; border: 3px solid #b22222; padding: 15px; border-radius: 15px; font-size: 20px; font-weight: bold; margin: 10px; color: #333; width: 90%; max-width: 700px; min-height: 60px; display: flex; align-items: center; justify-content: center; }
+        
+        #stats { font-size: 18px; font-weight: bold; margin-bottom: 10px; display: flex; gap: 30px; }
+        .time-warning { color: red; animation: blink 0.5s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        #grid { display: grid; grid-template-columns: repeat(6, 90px); gap: 12px; justify-content: center; padding: 15px; background: rgba(255,255,255,0.4); border-radius: 20px; }
+        
+        .shape { width: 80px; height: 80px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; position: relative; }
+        .shape:hover { transform: scale(1.1); }
+        .circle { border-radius: 50%; }
+        .square { border-radius: 4px; }
+        .rectangle { width: 100px; height: 60px; border-radius: 4px; }
+        .triangle { 
+            width: 0; height: 0; 
+            border-left: 40px solid transparent; 
+            border-right: 40px solid transparent; 
+            border-bottom: 80px solid;
+            background: none !important;
+        }
+
+        .hidden { visibility: hidden; opacity: 0; pointer-events: none; }
+
+        #credits { margin: 20px 0; font-size: 13px; color: #b22222; line-height: 1.4; font-weight: bold; }
+
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; max-width: 450px; text-align: left; border: 4px solid #b22222; }
+        
+        .controls { position: fixed; bottom: 15px; right: 15px; display: flex; flex-direction: column; gap: 8px; }
+        button.ui-btn { padding: 10px; cursor: pointer; background: #b22222; color: white; border: 2px solid gold; border-radius: 8px; font-weight: bold; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>🎨 Το Παιχνίδι της Λογικής</h1>
+    
+    <div id="difficulty-selector">
+        <button class="diff-btn" id="btn-easy" onclick="setLevel('easy')">Εύκολο</button>
+        <button class="diff-btn active" id="btn-medium" onclick="setLevel('medium')">Μέτριο</button>
+        <button class="diff-btn" id="btn-hard" onclick="setLevel('hard')">Δύσκολο</button>
+    </div>
+
+    <div id="question-box">Ετοιμάσου...</div>
+
+    <div id="stats">
+        <div>Σωστά: <span id="score">0</span> / <span id="total">0</span></div>
+        <div id="timer-display">Χρόνος: <span id="timer">40</span>s</div>
+    </div>
+
+    <div id="grid"></div>
+
+    <div id="credits">
+        In-School Teacher Training in Mathematics<br>
+        4th Primary School of Nea Artaki<br>
+        Papanikolaou Georgios 2026
+    </div>
+
+    <div class="controls">
+        <button class="ui-btn" onclick="showModal('teacher-modal')">👨‍🏫 Για Εκπαιδευτικούς</button>
+        <button class="ui-btn" onclick="showModal('info-modal')">📜 Οδηγίες</button>
+        <button class="ui-btn" onclick="initGame()">🔄 Νέο Παιχνίδι</button>
+    </div>
+</div>
+
+<div id="info-modal" class="modal" onclick="hideModals()">
+    <div class="modal-content">
+        <h2 style="text-align:center">📜 Οδηγίες</h2>
+        <p>Διάβασε προσεκτικά τον γρίφο! <br><br>
+        Στο <b>Εύκολο</b> επίπεδο βρίσκεις χρώματα ή σχήματα.<br>
+        Στο <b>Μέτριο</b> επίπεδο πρέπει να προσέχεις τι "είναι" και τι "δεν είναι" ένα σχήμα. <br>
+        Στο <b>Δύσκολο</b> επίπεδο μετράμε και τις γωνίες! (Κύκλος = 0, Τρίγωνο = 3, Τετράγωνο/Ορθογώνιο = 4).</p>
+        <button style="width:100%; padding:10px; background:#b22222; color:white; border:none;">Ξεκινάμε!</button>
+    </div>
+</div>
+
+<div id="teacher-modal" class="modal" onclick="hideModals()">
+    <div class="modal-content">
+        <h2 style="text-align:center">📘 Παιδαγωγικό Πλαίσιο</h2>
+        <p><b>Επίπεδα Λογικής:</b><br>
+        - <b>Εύκολο:</b> Μονό κριτήριο (Σχήμα ή Χρώμα).<br>
+        - <b>Μέτριο:</b> Σύζευξη και άρνηση ιδιοτήτων (π.χ. Α και όχι Β).<br>
+        - <b>Δύσκολο:</b> Συνδυασμός ιδιοτήτων (Χρώμα, Σχήμα, Αριθμός Γωνιών).</p>
+        <p><b>Στόχος:</b> Ανάπτυξη κριτικής ικανότητας και κατανόηση λογικών τελεστών στην Α' και Β' Δημοτικού.</p>
+        <button style="width:100%; padding:10px; background:#b22222; color:white; border:none;">Κλείσιμο</button>
+    </div>
+</div>
+
+<script>
+    const colors = [
+        {n: 'κόκκινα', v: '#e74c3c'}, {n: 'μπλε', v: '#3498db'},
+        {n: 'πράσινα', v: '#2ecc71'}, {n: 'κίτρινα', v: '#f1c40f'}
+    ];
+    const types = [
+        {n: 'κύκλος', np: 'κύκλοι', g: 0, q: 'Βρες όλους τους κύκλους!'}, 
+        {n: 'τετράγωνο', np: 'τετράγωνα', g: 4, q: 'Βρες όλα τα τετράγωνα!'},
+        {n: 'τρίγωνο', np: 'τρίγωνα', g: 3, q: 'Βρες όλα τα τρίγωνα!'}, 
+        {n: 'ορθογώνιο', np: 'ορθογώνια', g: 4, q: 'Βρες όλα τα ορθογώνια!'}
+    ];
+    
+    let currentLevel = 'medium', score = 0, totalToFind = 0, timeLeft = 40, timer;
+
+    function setLevel(lvl) {
+        currentLevel = lvl;
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + lvl).classList.add('active');
+        initGame();
+    }
+
+    function initGame() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        score = 0;
+        totalToFind = 0;
+        timeLeft = (currentLevel === 'hard') ? 50 : 40;
+        document.getElementById('score').innerText = score;
+        document.getElementById('timer-display').classList.remove('time-warning');
+
+        const currentShapes = [];
+        for (let i = 0; i < 18; i++) {
+            const t = types[Math.floor(Math.random() * types.length)];
+            const c = colors[Math.floor(Math.random() * colors.length)];
+            currentShapes.push({type: t, color: c});
+        }
+
+        let targetFilter;
+        let qText = "";
+        const rColor = colors[Math.floor(Math.random() * colors.length)];
+        const rType = types[Math.floor(Math.random() * types.length)];
+
+        if (currentLevel === 'easy') {
+            if (Math.random() > 0.5) {
+                qText = `Βρες όλα τα ${rColor.n} σχήματα!`;
+                targetFilter = (s) => s.color.v === rColor.v;
+            } else {
+                qText = rType.q;
+                targetFilter = (s) => s.type.n === rType.n;
+            }
+        } 
+        else if (currentLevel === 'medium') {
+            const isNot = Math.random() > 0.5;
+            if (isNot) {
+                qText = `Είναι ${rColor.n} και ΔΕΝ είναι ${rType.np}!`;
+                targetFilter = (s) => s.color.v === rColor.v && s.type.n !== rType.n;
+            } else {
+                qText = `Είναι ${rColor.n} και είναι ${rType.np}!`;
+                targetFilter = (s) => s.color.v === rColor.v && s.type.n === rType.n;
+            }
+        }
+        else { // Hard
+            const rAngles = [0, 3, 4][Math.floor(Math.random() * 3)];
+            let angleText = rAngles === 0 ? "0" : rAngles;
+            qText = `Έχουν ${angleText} γωνίες και ΔΕΝ είναι ${rColor.n}!`;
+            targetFilter = (s) => s.type.g === rAngles && s.color.v !== rColor.v;
+        }
+
+        document.getElementById('question-box').innerText = qText;
+
+        currentShapes.forEach(s => {
+            const isTarget = targetFilter(s);
+            if (isTarget) totalToFind++;
+
+            const div = document.createElement('div');
+            div.className = `shape ${s.type.n === 'κύκλος' ? 'circle' : (s.type.n === 'τετράγωνο' ? 'square' : (s.type.n === 'τρίγωνο' ? 'triangle' : 'rectangle'))}`;
+            
+            if (s.type.n === 'τρίγωνο') div.style.borderBottomColor = s.color.v;
+            else div.style.backgroundColor = s.color.v;
+
+            div.onclick = function() {
+                if (isTarget) {
+                    div.classList.add('hidden');
+                    score++;
+                    document.getElementById('score').innerText = score;
+                    if (score === totalToFind) {
+                        clearInterval(timer);
+                        confetti({particleCount: 150, spread: 70});
+                        setTimeout(() => alert("Είσαι αστέρι στη Λογική!"), 500);
+                    }
+                } else {
+                    alert("Λάθος! Ξαναδιάβασε τον γρίφο.");
+                }
+            };
+            grid.appendChild(div);
+        });
+
+        if (totalToFind === 0) return initGame(); 
+        document.getElementById('total').innerText = totalToFind;
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft;
+            if (timeLeft <= 10) document.getElementById('timer-display').classList.add('time-warning');
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                alert("Τελείωσε ο χρόνος! Πάτα Νέο Παιχνίδι.");
+            }
+        }, 1000);
+    }
+
+    function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function hideModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+
+    window.onload = initGame;
+</script>
+</body>
+</html>

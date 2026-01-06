@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Ο Δράκος των Ζευγαριών του 10 - Papanikolaou 2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background-color: #fdf5e6; font-family: 'Segoe UI', Arial, sans-serif; text-align: center; margin: 0; overflow: hidden; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: radial-gradient(circle, #fff5d7, #ffcfd2); display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #b22222; margin: 10px 0; font-size: 28px; text-shadow: 1px 1px gold; }
+        
+        #stats { display: flex; gap: 30px; font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+        .time-warning { color: red; animation: blink 0.5s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        .diff-btn { padding: 8px 15px; cursor: pointer; border: 2px solid #b22222; border-radius: 5px; background: gold; font-weight: bold; margin: 0 5px; transition: 0.3s; }
+        .diff-btn.active { background: #b22222; color: white; }
+
+        #dragon { font-size: 140px; position: absolute; bottom: 20px; user-select: none; z-index: 1; transition: 0.3s; }
+        #bubble { position: absolute; bottom: 220px; left: 60%; background: white; border: 3px solid #333; border-radius: 20px; padding: 10px 20px; font-size: 20px; font-weight: bold; display: none; z-index: 10; }
+
+        #eagle-container { display: grid; grid-template-columns: repeat(6, 85px); gap: 10px; padding: 15px; min-height: 180px; z-index: 5; }
+        .eagle { background: #b22222; color: gold; width: 75px; height: 75px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; cursor: pointer; border: 4px solid gold; box-shadow: 0 5px 10px rgba(0,0,0,0.3); transition: 0.2s; }
+        .eagle.selected { background: #ffd700; color: #b22222; transform: scale(1.15); border-color: #b22222; }
+        .hidden { visibility: hidden; opacity: 0; pointer-events: none; }
+
+        #credits { font-size: 14px; color: #b22222; font-style: italic; margin-top: 5px; font-weight: bold; line-height: 1.4; }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 15px; border: 5px solid gold; max-width: 500px; line-height: 1.6; font-size: 16px; color: #333; text-align: left; position: relative; }
+        .close-btn { background: #b22222; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 15px; display: block; margin-left: auto; margin-right: auto; }
+
+        .controls { position: fixed; bottom: 15px; right: 15px; display: flex; flex-direction: column; gap: 8px; }
+        button.control-btn { padding: 10px; cursor: pointer; background: #b22222; color: white; border: 1px solid gold; border-radius: 5px; font-size: 13px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>🐲 Ο Δράκος των Ζευγαριών του 10</h1>
+    
+    <div id="difficulty-selector">
+        <button class="diff-btn" id="easy" onclick="setDifficulty(40, 'easy')">Εύκολο (40s)</button>
+        <button class="diff-btn" id="medium" onclick="setDifficulty(20, 'medium')">Μέτριο (20s)</button>
+        <button class="diff-btn active" id="hard" onclick="setDifficulty(10, 'hard')">Δύσκολο (10s)</button>
+    </div>
+
+    <div id="stats">
+        <div>Σωστά: <span id="count">0</span>/6</div>
+        <div id="timer-display">Χρόνος: <span id="timer">10</span>s</div>
+    </div>
+
+    <div id="eagle-container"></div>
+    
+    <div id="credits">
+        In-School Teacher Training in Mathematics<br>
+        4th Primary School of Nea Artaki<br>
+        Papanikolaou Georgios 2026
+    </div>
+
+    <div id="bubble"></div>
+    <div id="dragon">🐉</div>
+
+    <div class="controls">
+        <button class="control-btn" onclick="toggleModal('teacher-modal', true)">👨‍🏫 Για Εκπαιδευτικούς</button>
+        <button class="control-btn" onclick="toggleModal('instructions-modal', true)">📜 Οδηγίες</button>
+        <button class="control-btn" onclick="toggleMusic()">🎵 Μουσική On/Off</button>
+        <button class="control-btn" onclick="initGame()">🔄 Νέο Παιχνίδι</button>
+    </div>
+
+    <div id="instructions-modal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <h2 style="color:#b22222;">📜 Το Μυστικό του Δράκου</h2>
+            <p><i>«Στις κορφές των βουνών, ο αρχαίος δράκος ξυπνά...<br>Η κοιλιά του γουργουρίζει, ζητάει κάτι γλυκά!<br><br><b>Ο δράκος πεινάει!</b><br>Τάισε τον με ζευγάρια αριθμών που αγκαλιάζονται και γίνονται <b>10</b>.<br>Μόνο τότε θα ηρεμήσει!»</i></p>
+            <button class="close-btn" onclick="toggleModal('instructions-modal', false)">Ξεκινάμε!</button>
+        </div>
+    </div>
+
+    <div id="teacher-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="color:#b22222; text-align:center;">📘 Παιδαγωγικό Πλαίσιο</h2>
+            <p><b>Τάξη:</b> Α' Δημοτικού (6-7 ετών)</p>
+            <p><b>Θεματική:</b> Πρόσθεση φυσικών αριθμών έως το 10.</p>
+            <p><b>Μαθησιακά Αποτελέσματα:</b> Οι μαθητές διερευνούν συνδυασμούς που δίνουν άθροισμα 10 (συμπληρώματα του 10). Ενισχύεται η αυτοματοποίηση των νοερών υπολογισμών και η ταχύτητα ανταπόκρισης.</p>
+            <p><b>Αξιολόγηση:</b> Παρατήρηση ακρίβειας, ταχύτητας και στρατηγικών υπολογισμού (π.χ. μέτρημα με τα δάχτυλα vs άμεση ανάκληση).</p>
+            <button class="close-btn" onclick="toggleModal('teacher-modal', false)">Κλείσιμο</button>
+        </div>
+    </div>
+
+    <audio id="bgMusic" loop>
+        <source src="https://www.chosic.com/wp-content/uploads/2021/04/Chinese-New-Year-Music.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="eatSound">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2290/2290-preview.mp3" type="audio/mpeg">
+    </audio>
+</div>
+
+<script>
+    let firstSelection = null, firstElement = null;
+    let correctPairs = 0, timeLeft = 10, maxTime = 10;
+    let timerInterval = null, gameActive = false;
+    const nums = [0, 10, 1, 9, 2, 8, 3, 7, 4, 6, 5, 5];
+
+    function toggleModal(id, show) {
+        document.getElementById(id).style.display = show ? 'flex' : 'none';
+    }
+
+    function setDifficulty(time, id) {
+        maxTime = time;
+        timeLeft = time;
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        initGame();
+    }
+
+    function initGame() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        gameActive = false;
+        correctPairs = 0;
+        timeLeft = maxTime;
+        firstSelection = null;
+        firstElement = null;
+        document.getElementById('count').innerText = "0";
+        document.getElementById('timer').innerText = timeLeft;
+        document.getElementById('timer-display').className = "";
+        
+        const container = document.getElementById('eagle-container');
+        container.innerHTML = '';
+        const shuffled = [...nums].sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach(n => {
+            const div = document.createElement('div');
+            div.className = 'eagle';
+            div.innerText = n;
+            div.onclick = () => selectNumber(n, div);
+            container.appendChild(div);
+        });
+    }
+
+    function startTimer() {
+        if (timerInterval) return;
+        gameActive = true;
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft;
+            if (timeLeft <= 5) document.getElementById('timer-display').className = "time-warning";
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                alert("Ο χρόνος τελείωσε! Ο δράκος πεινάει ακόμα...");
+                initGame();
+            }
+        }, 1000);
+    }
+
+    function selectNumber(num, element) {
+        if (correctPairs < 6) startTimer();
+        if (element.classList.contains('selected') || element.classList.contains('hidden')) return;
+
+        if (firstSelection === null) {
+            firstSelection = num;
+            firstElement = element;
+            element.classList.add('selected');
+        } else {
+            if (element === firstElement) return;
+            if (firstSelection + num === 10) {
+                correctPairs++;
+                document.getElementById('count').innerText = correctPairs;
+                document.getElementById('eatSound').play();
+                showBubble("Νιάμ! Σωστό!", "#2ecc71");
+                firstElement.classList.add('hidden');
+                element.classList.add('hidden');
+                if (correctPairs === 6) {
+                    clearInterval(timerInterval);
+                    celebrate();
+                }
+            } else {
+                showBubble("Λάθος!", "#e74c3c");
+                firstElement.classList.remove('selected');
+            }
+            firstSelection = null;
+            firstElement = null;
+        }
+    }
+
+    function showBubble(text, color) {
+        const b = document.getElementById('bubble');
+        b.innerText = text; b.style.color = color; b.style.display = "block";
+        setTimeout(() => b.style.display = "none", 800);
+    }
+
+    function celebrate() {
+        confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
+        setTimeout(() => alert("ΣΥΓΧΑΡΗΤΗΡΙΑ! Ο Δράκος χόρτασε!"), 500);
+    }
+
+    function toggleMusic() {
+        const m = document.getElementById('bgMusic');
+        m.paused ? m.play() : m.pause();
+    }
+
+    window.onload = initGame;
+</script>
+</body>
+</html>
