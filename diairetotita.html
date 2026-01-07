@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Mastery © Papanikolaou Georgios</title>
+    <style>
+        :root { --primary: #2c3e50; --success: #27ae60; --error: #e74c3c; --info: #3498db; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; text-align: center; padding: 10px; }
+        .container { max-width: 650px; margin: auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #ddd; position: relative; }
+        
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+        .modal-content { background: white; margin: 10% auto; padding: 25px; border-radius: 15px; width: 85%; max-width: 500px; text-align: left; line-height: 1.6; }
+        .close-btn { float: right; cursor: pointer; font-size: 24px; font-weight: bold; color: #888; }
+
+        /* Header Buttons */
+        .top-nav { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .nav-btn { background: #eee; border: 1px solid #ccc; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: 0.3s; }
+        .nav-btn:hover { background: #ddd; }
+
+        #ladder { display: flex; justify-content: center; gap: 6px; margin-bottom: 5px; background: #f0f0f0; padding: 12px; border-radius: 12px; }
+        .step { width: 32px; height: 18px; background: #ddd; border-radius: 4px; transition: 0.4s; }
+        .step.on:nth-child(-n+3) { background: #3498db; }
+        .step.on:nth-child(n+4):nth-child(-n+7) { background: #2ecc71; }
+        .step.on:nth-child(n+8) { background: #e74c3c; }
+
+        #trophies-bin { font-size: 1.8rem; margin: 10px 0; min-height: 45px; background: #fffbe6; border-radius: 10px; display: flex; justify-content: center; align-items: center; border: 1px dashed #f1c40f; color: #f1c40f; }
+
+        .num-box { font-size: 3.2rem; font-weight: bold; margin: 15px 0; padding: 15px; background: #f8f9fa; border: 3px solid #34495e; border-radius: 15px; color: var(--primary); min-height: 85px; display: flex; justify-content: center; align-items: center; }
+        #check-mark { display: none; color: var(--success); margin-left: 15px; font-size: 2.8rem; animation: pop 0.4s ease-out; }
+
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
+        .btn-opt { padding: 14px 5px; border: 2px solid #ddd; border-radius: 10px; cursor: pointer; font-weight: bold; background: white; transition: 0.2s; }
+        .btn-opt.active { background: #1a252f !important; color: #fff !important; transform: scale(0.95); }
+        
+        .special-btn { background: #e67e22; color: white; padding: 12px; margin: 5px auto; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; width: 90%; display: block; }
+        .special-btn.active { background: #873600 !important; }
+
+        .hard-buttons { display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
+        .btn-hard-spec { background: #9b59b6; color: white; padding: 12px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-hard-spec.active { background: #4a235a !important; }
+
+        input { font-size: 1.6rem; padding: 10px; width: 50%; text-align: center; border-radius: 8px; border: 2px solid var(--primary); }
+        button.main-btn { padding: 16px 35px; font-size: 1.3rem; cursor: pointer; border: none; border-radius: 12px; background: var(--success); color: white; font-weight: bold; margin: 15px; width: 220px; box-shadow: 0 5px #1e8449; }
+
+        #feedback { height: 35px; font-weight: bold; margin: 10px; }
+        #help { display: none; background: #fffde7; padding: 15px; border-radius: 10px; border-left: 5px solid #f1c40f; margin-top: 15px; }
+
+        @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+        footer { margin-top: 35px; font-size: 0.85rem; color: #555; border-top: 1px solid #ddd; padding-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-nav">
+        <button class="nav-btn" onclick="openModal('modal-instr')">ℹ️ Instructions</button>
+        <button class="nav-btn" onclick="openModal('modal-pedag')">🎓 For Teachers</button>
+    </div>
+
+    <h3 style="margin-top:0; color:#b22222;">Με ποιους αριθμούς διαιρείται;</h3>
+    
+    <div id="ladder">
+        <div class="step" id="s1"></div><div class="step" id="s2"></div><div class="step" id="s3"></div>
+        <div class="step" id="s4"></div><div class="step" id="s5"></div><div class="step" id="s6"></div>
+        <div class="step" id="s7"></div><div class="step" id="s8"></div><div class="step" id="s9"></div>
+        <div class="step" id="s10"></div>
+    </div>
+    <div id="trophies-bin">Προθήκη Κυπέλλων</div>
+
+    <div style="margin-bottom: 12px;">
+        <button onclick="setMode('easy')" style="background:#3498db; color:white; border:none; padding:7px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">ΕΥΚΟΛΟ</button>
+        <button onclick="setMode('hard')" style="background:#9b59b6; color:white; border:none; padding:7px 15px; border-radius:5px; cursor:pointer; font-weight:bold;">ΔΥΣΚΟΛΟ</button>
+    </div>
+
+    <div id="instr" style="color:#555; font-weight:bold; font-size:0.9rem"></div>
+    <div class="num-box">
+        <span id="main-num">---</span><span id="check-mark">✓</span>
+    </div>
+    
+    <div id="game-zone"></div>
+    <div id="feedback"></div>
+    
+    <button class="main-btn" onclick="check()">ΕΛΕΓΧΟΣ</button>
+    <div><button onclick="start()" style="cursor:pointer; padding:8px; background:none; border:none; color:#888; text-decoration:underline;">Αλλαγή Αριθμού</button></div>
+
+    <div id="help"></div>
+
+    <footer>
+        Intra-school Training Professional Development in Mathematics<br>
+        <strong>Papanikolaou Georgios © 2025</strong>
+    </footer>
+</div>
+
+<div id="modal-instr" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('modal-instr')">&times;</span>
+        <h2 style="color:var(--info)">Οδηγίες Χρήσης</h2>
+        <ul>
+            <li><strong>Επίπεδο Εύκολο:</strong> Επιλέξτε όλα τα κουμπιά που είναι διαιρέτες του αριθμού. Αν ο αριθμός δεν διαιρείται με κανέναν, πατήστε "Πρώτος Αριθμός".</li>
+            <li><strong>Επίπεδο Δύσκολο:</strong> Συμπληρώστε το ψηφίο που λείπει [x] ώστε ο αριθμός να διαιρείται με τον στόχο. Χρησιμοποιήστε τα "ΟΛΟΙ" ή "ΚΑΝΕΙΣ" αν ταιριάζουν όλα ή κανένα ψηφίο.</li>
+            <li><strong>Σκάλα Προόδου:</strong> Κάθε σωστή απάντηση σας ανεβάζει! Στις 10 επιτυχίες κερδίζετε ένα χρυσό κύπελλο.</li>
+        </ul>
+    </div>
+</div>
+
+<div id="modal-pedag" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal('modal-pedag')">&times;</span>
+        <h2 style="color:var(--success)">Εκπαιδευτική Αξία & Στόχοι</h2>
+        <p><strong>Στοχοθεσία:</strong></p>
+        <ul>
+            <li>Εμπέδωση των κριτηρίων διαιρετότητας (2, 3, 4, 5, 8, 9, 10, 100).</li>
+            <li>Ανάπτυξη υπολογιστικής σκέψης και αναγνώριση προτύπων.</li>
+            <li>Διάκριση μεταξύ σύνθετων και πρώτων αριθμών.</li>
+        </ul>
+        <p><strong>Παιδαγωγική Αξία:</strong></p>
+        <p>Το εργαλείο χρησιμοποιεί τεχνικές <em>Gamification</em> για τη μείωση του μαθηματικού άγχους. Η άμεση ανατροφοδότηση (ήχοι, σκάλα) βοηθά στην αυτοδιόρθωση, ενώ η κλιμακούμενη δυσκολία επιτρέπει τη διαφοροποιημένη διδασκαλία στην τάξη.</p>
+    </div>
+</div>
+
+<audio id="applause-sound" src="https://www.soundjay.com/human/applause-01.mp3"></audio>
+<audio id="fail-sound" src="https://www.soundjay.com/communication/sounds/fail-trumpet-01.mp3"></audio>
+
+<script>
+    let mode = 'easy'; let score = 0; let trophies = 0; let fails = 0; let data = {};
+    let selected = new Set(); let isPrimeSelected = false;
+    let helpShown = false; let hardSpecial = "";
+    const divs = [2, 3, 4, 5, 8, 9, 10, 100];
+
+    function openModal(id) { document.getElementById(id).style.display = "block"; }
+    function closeModal(id) { document.getElementById(id).style.display = "none"; }
+    window.onclick = function(event) { if (event.target.className === 'modal') event.target.style.display = "none"; }
+
+    function setMode(m) { mode = m; score = 0; updateScore(); start(); }
+
+    function start() {
+        fails = 0; selected.clear(); isPrimeSelected = false; helpShown = false; hardSpecial = "";
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('help').style.display = "none";
+        document.getElementById('check-mark').style.display = "none";
+        
+        if (mode === 'easy') {
+            let n;
+            do { n = Math.floor(Math.random() * 800) + 12; } while (n%2!==0 && n%3!==0 && n%5!==0 && Math.random() > 0.15);
+            let ans = divs.filter(d => n % d === 0);
+            data = { val: n, ans: ans, isPrime: (ans.length === 0) };
+            document.getElementById('instr').innerText = "Πάτησε όλους τους διαιρέτες:";
+            document.getElementById('main-num').innerText = n;
+            renderEasy();
+        } else {
+            let base = Math.floor(Math.random() * 850) + 100;
+            let pos = Math.floor(Math.random() * 3);
+            let target = [3, 9, 5][Math.floor(Math.random()*3)];
+            data = { base: base.toString(), pos: pos, target: target };
+            document.getElementById('instr').innerText = `Ψηφίο για διαιρετότητα με το ${target}:`;
+            document.getElementById('main-num').innerText = base.toString().slice(0, pos) + "[x]" + base.toString().slice(pos);
+            renderHard();
+        }
+    }
+
+    function renderEasy() {
+        let h = '<div class="grid">';
+        divs.forEach(d => {
+            let style = (d === 4 || d === 8) ? 'style="font-size:0.95rem;"' : '';
+            h += `<div class="btn-opt" id="d${d}" ${style} onclick="toggle(${d})">${d}</div>`;
+        });
+        h += '</div><button class="special-btn" id="primeBtn" onclick="togglePrime()">ΕΙΝΑΙ ΠΡΩΤΟΣ ΑΡΙΘΜΟΣ</button>';
+        document.getElementById('game-zone').innerHTML = h;
+    }
+
+    function renderHard() {
+        let h = '<input type="number" id="ans-in" min="0" max="9" placeholder="0-9"><div class="hard-buttons">';
+        h += '<button class="btn-hard-spec" id="btnAll" onclick="setHardSpec(\'all\')">ΟΛΟΙ</button>';
+        h += '<button class="btn-hard-spec" id="btnNone" onclick="setHardSpec(\'none\')">ΚΑΝΕΙΣ</button>';
+        h += '</div>';
+        document.getElementById('game-zone').innerHTML = h;
+    }
+
+    function toggle(d) {
+        if(isPrimeSelected) togglePrime();
+        const b = document.getElementById('d'+d);
+        if (selected.has(d)) { selected.delete(d); b.classList.remove('active'); }
+        else { selected.add(d); b.classList.add('active'); }
+    }
+
+    function togglePrime() {
+        isPrimeSelected = !isPrimeSelected; selected.clear();
+        document.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('active'));
+        document.getElementById('primeBtn').classList.toggle('active', isPrimeSelected);
+    }
+
+    function setHardSpec(val) {
+        hardSpecial = (hardSpecial === val) ? "" : val;
+        document.getElementById('btnAll').classList.toggle('active', hardSpecial === 'all');
+        document.getElementById('btnNone').classList.toggle('active', hardSpecial === 'none');
+        if(hardSpecial !== "") document.getElementById('ans-in').value = "";
+    }
+
+    function check() {
+        let isOk = false;
+        if (mode === 'easy') {
+            if (selected.size === 0 && !isPrimeSelected) return;
+            isOk = isPrimeSelected ? data.isPrime : (JSON.stringify(Array.from(selected).sort((a,b)=>a-b)) === JSON.stringify(data.ans.sort((a,b)=>a-b)));
+        } else {
+            let v = document.getElementById('ans-in').value.trim();
+            if (v === "" && hardSpecial === "") return;
+            let sol = []; for(let i=0; i<=9; i++) {
+                if (parseInt(data.base.slice(0, data.pos) + i + data.base.slice(data.pos)) % data.target === 0) sol.push(i);
+            }
+            if (hardSpecial === "all") isOk = (sol.length === 10);
+            else if (hardSpecial === "none") isOk = (sol.length === 0);
+            else isOk = sol.includes(parseInt(v));
+        }
+
+        if (isOk) {
+            if (!helpShown) {
+                score++;
+                if (score >= 10) { score = 0; trophies = Math.min(trophies + 1, 10); }
+            }
+            document.getElementById('feedback').innerHTML = "<span style='color:var(--success)'>✔️ Σωστά!</span>";
+            document.getElementById('check-mark').style.display = "inline";
+            document.getElementById('applause-sound').play().catch(()=>{});
+            setTimeout(start, 1800);
+        } else {
+            score = Math.max(0, score - 1); fails++;
+            document.getElementById('feedback').innerHTML = "<span style='color:var(--error)'>❌ Λάθος!</span>";
+            document.getElementById('fail-sound').play().catch(()=>{});
+            if (fails >= 3) showCorrectAnswer();
+        }
+        updateScore();
+    }
+
+    function showCorrectAnswer() {
+        helpShown = true;
+        let h = document.getElementById('help'); h.style.display = "block";
+        if (mode === 'easy') h.innerHTML = "<b>Απάντηση:</b> " + (data.isPrime ? "Πρώτος!" : data.ans.join(', '));
+        else {
+            let sol = []; for(let i=0; i<=9; i++) { if (parseInt(data.base.slice(0, data.pos) + i + data.base.slice(data.pos)) % data.target === 0) sol.push(i); }
+            h.innerHTML = "<b>Απάντηση:</b> " + (sol.length === 10 ? "Όλοι" : (sol.length > 0 ? sol.join(', ') : "Κανείς"));
+        }
+    }
+
+    function updateScore() {
+        for(let i=1; i<=10; i++) document.getElementById('s'+i).classList.toggle('on', i <= score);
+        let tStr = ""; for(let i=0; i<trophies; i++) tStr += "🏆";
+        document.getElementById('trophies-bin').innerText = tStr || "Προθήκη Κυπέλλων";
+        document.getElementById('trophies-bin').style.color = trophies ? "#f1c40f" : "#aaa";
+    }
+    start();
+</script>
+</body>
+</html>
