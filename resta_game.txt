@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Παιχνίδι: Τα Ρέστα στην Ταμία</title>
+    <style>
+        body { font-family: 'Comic Sans MS', cursive, sans-serif; background-color: #fdf2e9; text-align: center; margin: 0; padding: 10px; }
+        .container { max-width: 950px; margin: auto; border: 5px solid #e67e22; border-radius: 25px; background: white; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        
+        /* Επίπεδα */
+        .levels { margin-bottom: 15px; }
+        .level-btn { padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 10px; border: 2px solid #d35400; background: #fff; margin: 0 5px; transition: 0.3s; }
+        .level-btn.active { background: #e67e22; color: white; font-weight: bold; }
+
+        /* Ταμείο και Ταμίας */
+        .header-area { display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px; background: #fff3e0; padding: 15px; border-radius: 20px; }
+        .cashier-img { width: 120px; height: auto; border-radius: 10px; }
+        .display-screen { background: #2c3e50; color: #2ecc71; font-family: 'Courier New', monospace; font-size: 35px; padding: 15px; border-radius: 10px; border: 4px solid #7f8c8d; min-width: 180px; }
+        
+        .instruction { font-size: 20px; color: #2c3e50; margin: 10px 0; }
+
+        /* Πορτοκαλί Συρτάρι με νομίσματα */
+        .drawer { background: #ff9800; padding: 25px; border-radius: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; min-height: 250px; border: 4px solid #e64a19; }
+        
+        .coin-item { position: relative; cursor: pointer; transition: transform 0.1s; }
+        .coin-item:hover { transform: scale(1.05); }
+        .coin-item img { width: 75px; height: 75px; object-fit: contain; }
+        
+        /* Κόκκινο κυκλάκι επιλογής */
+        .selection-ring { 
+            position: absolute; top: -5px; left: -5px; width: calc(100% + 10px); height: calc(100% + 10px); 
+            border: 6px solid #ff0000; border-radius: 50%; box-sizing: border-box;
+            display: none; pointer-events: none;
+        }
+        .selected .selection-ring { display: block; }
+
+        /* Μηχανή και Κουμπί */
+        .controls { margin-top: 20px; }
+        .green-button { width: 80px; height: 80px; background-color: #27ae60; border-radius: 50%; border: none; border-bottom: 6px solid #1e8449; cursor: pointer; color: white; font-size: 20px; font-weight: bold; }
+        .green-button:active { border-bottom: none; transform: translateY(4px); }
+
+        #feedback-text { font-size: 28px; font-weight: bold; margin-top: 15px; height: 40px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="levels">
+        <button id="btn-easy" class="level-btn active" onclick="setDifficulty('easy')">Εύκολο (Ολόκληρα €)</button>
+        <button id="btn-medium" class="level-btn" onclick="setDifficulty('medium')">Μεσαίο (Δεκάδες λεπτών)</button>
+        <button id="btn-hard" class="level-btn" onclick="setDifficulty('hard')">Δύσκολο (Όλες οι τιμές)</button>
+    </div>
+
+    <div class="header-area">
+        <img src="tameio.png" alt="Ταμίας" class="cashier-img">
+        <div>
+            <div class="instruction">Ο πελάτης έδωσε 10€. <br> Πρέπει να δώσεις ρέστα:</div>
+            <div class="display-screen" id="price-display">0.00 €</div>
+        </div>
+        <button class="green-button" onclick="checkResta()">OK</button>
+    </div>
+
+    <div class="drawer" id="coinDrawer">
+        </div>
+
+    <div id="feedback-text"></div>
+</div>
+
+<audio id="sound-applause" src="https://www.soundjay.com/human/sounds/applause-01.mp3"></audio>
+
+<script>
+    let currentDifficulty = 'easy';
+    let targetPrice = 0;
+    let userSelection = 0;
+    const customerPaid = 10;
+
+    // Πλήρης λίστα με τα ονόματα των αρχείων σου
+    const availableCoins = [
+        { val: 5, img: 'euro5.png' },   // Αν έχεις χαρτονόμισμα 5€, αλλιώς βάλτο
+        { val: 2, img: 'euro2.png' },
+        { val: 1, img: 'euro1.png' },
+        { val: 0.50, img: 'cents50.png' },
+        { val: 0.20, img: 'cents20.png' },
+        { val: 0.10, img: 'cents10.png' },
+        { val: 0.05, img: 'cents5.png' },
+        { val: 0.02, img: 'cents2.png' },
+        { val: 0.01, img: 'cents1.png' }
+    ];
+
+    function setDifficulty(level) {
+        currentDifficulty = level;
+        document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + level).classList.add('active');
+        newGame();
+    }
+
+    function generatePrice() {
+        if (currentDifficulty === 'easy') {
+            // Ολόκληρα ευρώ: 1, 2, 3... έως 9
+            return Math.floor(Math.random() * 9) + 1;
+        } else if (currentDifficulty === 'medium') {
+            // Δεκάδες λεπτών: π.χ. 2.50, 8.10
+            let euros = Math.floor(Math.random() * 9) + 1;
+            let cents = (Math.floor(Math.random() * 9) + 1) * 0.1;
+            return parseFloat((euros + cents).toFixed(2));
+        } else {
+            // Δύσκολο: π.χ. 4.67, 3.12
+            return parseFloat((Math.random() * 8.99 + 1).toFixed(2));
+        }
+    }
+
+    function newGame() {
+        targetPrice = generatePrice();
+        document.getElementById('price-display').innerText = (10 - targetPrice).toFixed(2).replace('.', ',') + " €"; 
+        /* ΣΗΜΕΙΩΣΗ: Στο ταμπλό δείχνουμε πόσα ρέστα ΠΡΕΠΕΙ να δώσει ή την τιμή του προϊόντος; 
+           Αν η μηχανή δείχνει την ΤΙΜΗ του προϊόντος, άλλαξε το παραπάνω σε: targetPrice.toFixed(2) */
+        
+        document.getElementById('price-display').innerText = targetPrice.toFixed(2).replace('.', ',') + " €";
+        
+        userSelection = 0;
+        document.getElementById('feedback-text').innerText = "";
+        renderDrawer();
+    }
+
+    function renderDrawer() {
+        const drawer = document.getElementById('coinDrawer');
+        drawer.innerHTML = '';
+        
+        // Δημιουργούμε 3-4 αντίγραφα για κάθε νόμισμα για να μπορεί να κάνει συνδυασμούς
+        availableCoins.forEach(coin => {
+            for(let i=0; i < 3; i++) {
+                const item = document.createElement('div');
+                item.className = 'coin-item';
+                item.innerHTML = `<img src="${coin.img}"><div class="selection-ring"></div>`;
+                item.onclick = function() {
+                    this.classList.toggle('selected');
+                    if(this.classList.contains('selected')) userSelection += coin.val;
+                    else userSelection -= coin.val;
+                };
+                drawer.appendChild(item);
+            }
+        });
+    }
+
+    function checkResta() {
+        const neededResta = parseFloat((customerPaid - targetPrice).toFixed(2));
+        const feedback = document.getElementById('feedback-text');
+        
+        if (Math.abs(userSelection - neededResta) < 0.005) {
+            feedback.innerHTML = "👏 Ευχαριστώ πολύ, σωστά! 👏";
+            feedback.style.color = "#27ae60";
+            document.getElementById('sound-applause').play();
+            setTimeout(newGame, 4000);
+        } else {
+            feedback.innerHTML = "❌ Ξαναμέτρησε λίγο τα ρέστα...";
+            feedback.style.color = "#c0392b";
+        }
+    }
+
+    // Έναρξη
+    newGame();
+</script>
+
+</body>
+</html>
